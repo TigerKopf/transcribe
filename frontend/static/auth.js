@@ -63,7 +63,7 @@ function startStreamingWithCredentials(username, password) {
     const wsUrl = `ws://${window.location.host}/ws/technician`;
 
     // New subprotocol format: "basic-auth-BASE64"
-    const subprotocol = `basic-auth-${btoa(`${username}:${password}`)}`;
+    const subprotocol = `basic-auth-${btoa(encodeURIComponent(`${username}:${password}`))}`;
 
     // Pass the subprotocol in the WebSocket constructor
     webSocket = new WebSocket(wsUrl, [subprotocol]);
