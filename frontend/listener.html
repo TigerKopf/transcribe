@@ -23,13 +23,17 @@
       <button id="stopButton">Stop Listening</button>
     </div>
 
-    <script src="/static/main.js"></script>
+    <script src="{{ url_for('static', path='main.js') }}"></script>
     <script>
         let currentConnection = null;
 
         function selectLanguage(lang) {
             if (currentConnection) {
                 currentConnection.close();
+            }
+            // Ensure AudioContext is resumed on user gesture
+            if (typeof audioContext !== 'undefined' && audioContext.state === 'suspended') {
+                audioContext.resume();
             }
             currentConnection = listen(lang);
             document.getElementById('status').textContent = `Status: Verbunden mit ${lang.toUpperCase()}`;

@@ -24,7 +24,7 @@ COPY backend/ ./backend
 COPY frontend/ ./frontend
 COPY supervisor.conf /etc/supervisor/conf.d/supervisor.conf
 
-EXPOSE 8000
+EXPOSE 8001
 
 # Supervisor starten, der den Webserver startet
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisor.conf"]

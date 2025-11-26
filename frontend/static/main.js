@@ -1,12 +1,16 @@
 // Globale Variablen
 let audioContext;
-let scriptProcessor;
-let mediaStreamSource;
 let webSocket;
+let audioWorkletNode;
+let mediaStreamSource;
 
 // Funktion für die Techniker-Seite
-async function startStreaming() {
-    const wsUrl = `ws://${window.location.host}/ws/technician`;
+async function startStreaming(token) {
+    if (!token) {
+        document.getElementById('status').textContent = 'Fehler: Authentifizierungs-Token fehlt.';
+        return;
+    }
+    const wsUrl = `ws://${window.location.host}/ws/technician?token=${token}`;
     webSocket = new WebSocket(wsUrl);
 
     webSocket.onopen = async () => {
@@ -14,27 +18,34 @@ async function startStreaming() {
         document.getElementById('status').textContent = 'Status: Verbunden. Starte Audio...';
 
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            // 1. Initialisiere AudioContext und lade das Worklet-Modul
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
-            mediaStreamSource = audioContext.createMediaStreamSource(stream);
+            await audioContext.audioWorklet.addModule('/static/audio-processor.js');
 
-            scriptProcessor.onaudioprocess = (event) => {
+            // 2. Erstelle den AudioWorkletNode
+            audioWorkletNode = new AudioWorkletNode(audioContext, 'audio-data-processor');
+
+            // 3. Richte die Kommunikation vom Worklet zum Haupt-Thread ein
+            audioWorkletNode.port.onmessage = (event) => {
                 if (webSocket.readyState === WebSocket.OPEN) {
-                    const inputData = event.inputBuffer.getChannelData(0);
-                    // Sende die rohen Float32-Daten
-                    webSocket.send(inputData.buffer);
+                    // Die Daten sind bereits ein ArrayBuffer, also direkt senden
+                    webSocket.send(event.data);
                 }
             };
 
-            mediaStreamSource.connect(scriptProcessor);
-            scriptProcessor.connect(audioContext.destination); // Notwendig, damit onaudioprocess feuert
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaStreamSource = audioContext.createMediaStreamSource(stream);
+
+            // 4. Verbinde die Audio-Quelle mit dem Worklet
+            mediaStreamSource.connect(audioWorkletNode);
+            // Das Worklet muss mit dem Destination verbunden sein, um die process-Methode auszulösen
+            audioWorkletNode.connect(audioContext.destination);
 
             document.getElementById('status').textContent = 'Status: Übertragung läuft...';
 
         } catch (error) {
-            console.error("Error accessing microphone:", error);
-            document.getElementById('status').textContent = 'Fehler: Mikrofonzugriff verweigert.';
+            console.error("Error setting up audio processing:", error);
+            document.getElementById('status').textContent = `Fehler: ${error.message}`;
             webSocket.close();
         }
     };
@@ -43,8 +54,9 @@ async function startStreaming() {
         console.log("WebSocket connection closed.");
         document.getElementById('status').textContent = 'Status: Verbindung getrennt.';
         document.getElementById('startButton').disabled = false;
-        if (scriptProcessor) scriptProcessor.disconnect();
+        // Clean up audio resources
         if (mediaStreamSource) mediaStreamSource.disconnect();
+        if (audioWorkletNode) audioWorkletNode.disconnect();
     };
 
     webSocket.onerror = (error) => {
@@ -59,7 +71,6 @@ function listen(language) {
     const socket = new WebSocket(wsUrl);
     socket.binaryType = "arraybuffer";
 
-    // Initialisiere den AudioContext erst bei einer User-Aktion (Klick)
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
@@ -77,7 +88,6 @@ function listen(language) {
         const data = audioQueue.shift();
         const float32Array = new Float32Array(data);
 
-        // Erstelle einen AudioBuffer und fülle ihn
         const audioBuffer = audioContext.createBuffer(1, float32Array.length, audioContext.sampleRate);
         audioBuffer.copyToChannel(float32Array, 0);
 
@@ -90,29 +100,21 @@ function listen(language) {
 
         source.start(startTime);
 
-        // Plane die nächste Wiedergabezeit
         nextPlayTime = startTime + audioBuffer.duration;
 
         source.onended = () => {
             isPlaying = false;
-            // Spiele das nächste Stück in der Warteschlange ab
             schedulePlayback();
         };
     }
 
     socket.onmessage = async (event) => {
-        // Empfange die ArrayBuffer Daten und füge sie zur Warteschlange hinzu
         audioQueue.push(event.data);
         schedulePlayback();
     };
 
-    socket.onopen = () => {
-        console.log(`Connected to ${language} stream.`);
-    };
+    socket.onopen = () => console.log(`Connected to ${language} stream.`);
+    socket.onclose = () => console.log(`Disconnected from ${language} stream.`);
 
-    socket.onclose = () => {
-        console.log(`Disconnected from ${language} stream.`);
-    };
-
-    return socket; // Gib das Socket-Objekt zurück, um es zu verwalten
+    return socket;
 }
