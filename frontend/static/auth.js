@@ -60,7 +60,8 @@ async function connectWebSocket() {
 // This function will replace the direct call to startStreaming in technician.html
 function startStreamingWithCredentials(username, password) {
     // Construct the WebSocket URL
-    const wsUrl = `ws://${window.location.host}/ws/technician`;
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${proto}//${window.location.host}/ws/technician`;
 
     // New subprotocol format: "basic-auth-BASE64"
     const subprotocol = `basic-auth-${btoa(encodeURIComponent(`${username}:${password}`))}`;
