@@ -21,8 +21,21 @@ async function connectWebSocket() {
             }
         } catch (e) {
             console.error('Error getting credentials:', e);
-            document.getElementById('status').textContent = 'Fehler bei der Anmeldung.';
-            document.getElementById('startButton').disabled = false;
+            // If the modern API fails, fall back to the prompt method.
+            console.warn('Credential Management API failed. Falling back to prompt.');
+            const username = prompt('Benutzername eingeben:', 'technician');
+            if (username) {
+                const password = prompt('Passwort eingeben:');
+                if (password) {
+                    startStreamingWithCredentials(username, password);
+                } else {
+                    document.getElementById('status').textContent = 'Fehler: Passwort erforderlich.';
+                    document.getElementById('startButton').disabled = false;
+                }
+            } else {
+                document.getElementById('status').textContent = 'Fehler: Benutzername erforderlich.';
+                document.getElementById('startButton').disabled = false;
+            }
         }
     } else {
         // Fallback for insecure contexts (HTTP) or unsupported browsers
