@@ -5,14 +5,7 @@ let audioWorkletNode;
 let mediaStreamSource;
 
 // Funktion für die Techniker-Seite
-async function startStreaming(token) {
-    if (!token) {
-        document.getElementById('status').textContent = 'Fehler: Authentifizierungs-Token fehlt.';
-        return;
-    }
-    const wsUrl = `ws://${window.location.host}/ws/technician?token=${token}`;
-    webSocket = new WebSocket(wsUrl);
-
+function setupWebSocketHandlers() {
     webSocket.onopen = async () => {
         console.log("WebSocket connection established.");
         document.getElementById('status').textContent = 'Status: Verbunden. Starte Audio...';

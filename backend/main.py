@@ -15,23 +15,25 @@ templates = Jinja2Templates(directory="frontend")
 # 1. Use environment variable for the password with a default fallback
 CORRECT_PASSWORD = os.environ.get("TECHNICIAN_PASSWORD", "your-secure-password")
 
-# In-memory store for single-use tokens. In a real multi-process/multi-server
-# setup, this should be a shared store like Redis.
-valid_tokens = set()
-
 def verify_password(credentials: HTTPBasicCredentials = Depends(security)):
-    """Verifies the password provided via HTTP Basic Auth."""
-    current_password_bytes = credentials.password.encode("utf8")
-    is_correct_password = secrets.compare_digest(
-        current_password_bytes, CORRECT_PASSWORD.encode("utf8")
-    )
-    if not is_correct_password:
-        raise HTTPException(
-            status_code=401,
-            detail="Incorrect password",
-            headers={"WWW-Authenticate": "Basic"},
+    """
+    Verifies the password provided via HTTP Basic Auth.
+    This function now handles both direct credential objects and extracting
+    credentials from the request headers.
+    """
+    if credentials:
+        current_password_bytes = credentials.password.encode("utf8")
+        is_correct_password = secrets.compare_digest(
+            current_password_bytes, CORRECT_PASSWORD.encode("utf8")
         )
-    return True
+        if not is_correct_password:
+            raise HTTPException(
+                status_code=401,
+                detail="Incorrect password",
+                headers={"WWW-Authenticate": "Basic"},
+            )
+        return True
+    return False
 
 # Manager for connected listeners (remains the same)
 class ConnectionManager:
@@ -63,17 +65,38 @@ async def process_and_translate(audio_chunk: bytes):
 
 # WebSocket for the technician (now with token authentication)
 @app.websocket("/ws/technician")
-async def ws_technician(websocket: WebSocket, token: str = None):
-    """Accepts WebSocket connections if a valid, single-use token is provided."""
-    if token is None or token not in valid_tokens:
-        await websocket.close(code=4003)
+async def ws_technician(websocket: WebSocket):
+    """
+    Accepts a WebSocket connection and authenticates it using Basic Auth credentials
+    sent in the subprotocol. Rejects if credentials are bad.
+    """
+    # 1. Extract credentials from the subprotocol
+    # Starlette/FastAPI puts the `Sec-WebSocket-Protocol` header here
+    subprotocol = websocket.scope.get("subprotocols")
+    credentials = None
+    if subprotocol:
+        # Example format: "Basic, bWVpbnM6bWVpbnM=" -> "bWVpbnM6bWVpbnM="
+        auth_part = subprotocol[0].split(',')[-1].strip()
+        try:
+            # The credentials should be the second part of the subprotocol header
+            credentials = HTTPBasicCredentials(authorization=f"Basic {auth_part}")
+        except Exception:
+            pass  # Invalid format
+
+    # 2. Verify credentials
+    try:
+        if not credentials or not verify_password(credentials):
+            # This is a bit of a hack. `verify_password` raises HTTPException,
+            # but we can't propagate that in a WebSocket. We catch it and close.
+            await websocket.close(code=1008) # Policy Violation
+            return
+    except HTTPException:
+        await websocket.close(code=1008) # Policy Violation
         return
 
-    # Consume the token to prevent reuse
-    valid_tokens.remove(token)
-
-    await websocket.accept()
-    print("Technician connected with valid token.")
+    # 3. If authentication is successful, proceed
+    await websocket.accept(subprotocol=subprotocol[0] if subprotocol else None)
+    print("Technician connected with valid credentials.")
     try:
         while True:
             audio_data = await websocket.receive_bytes()
@@ -101,14 +124,20 @@ async def get_listener(request: Request):
 
 # 2. Modified technician page route
 @app.get("/technician", response_class=HTMLResponse)
-async def get_technician_page(request: Request, authenticated: bool = Depends(verify_password)):
+async def get_technician_page(request: Request):
     """
-    After successful basic auth, generate a token and render the technician page,
-    passing the token to the template.
+    Serves the technician page after successful basic auth.
+    No token is needed anymore as auth will be handled via subprotocol in WebSocket.
     """
-    token = str(uuid.uuid4())
-    valid_tokens.add(token)
-    return templates.TemplateResponse("technician.html", {"request": request, "token": token})
+    auth = HTTPBasic()
+    credentials = await auth(request)
+    if not verify_password(credentials):
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return templates.TemplateResponse("technician.html", {"request": request})
 
 # Mount static files (remains the same)
 app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
