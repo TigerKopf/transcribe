@@ -15,15 +15,12 @@
     <button id="startButton">Übertragung starten</button>
     <div id="status">Status: Nicht verbunden</div>
 
-    <!-- Pass the token from the server to the JavaScript -->
-    <script>
-        const authToken = "{{ token }}";
-    </script>
     <script src="/static/main.js"></script>
+    <script src="/static/auth.js"></script>
     <script>
         document.getElementById('startButton').onclick = () => {
-            // Pass the token to the streaming function
-            startStreaming(authToken);
+            // Use the new secure function to get credentials and connect
+            connectWebSocket();
             document.getElementById('status').textContent = 'Status: Verbinde...';
             document.getElementById('startButton').disabled = true;
         };
