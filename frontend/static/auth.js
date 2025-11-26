@@ -3,23 +3,54 @@
 
 // Function to get credentials and start the WebSocket connection
 async function connectWebSocket() {
-    try {
-        // Use the Credential Management API to get the password
-        const cred = await navigator.credentials.get({
-            password: true
-        });
+    // Check if the Credential Management API is available in a secure context
+    if (window.isSecureContext && 'credentials' in navigator) {
+        try {
+            // Use the Credential Management API to get the password
+            const cred = await navigator.credentials.get({
+                password: true
+            });
 
-        if (cred) {
-            // If credentials are found, start the streaming process
-            // The 'startStreaming' function is defined in main.js
-            startStreamingWithCredentials(cred.id, cred.password);
-        } else {
-            // Handle cases where no credentials are found
-            document.getElementById('status').textContent = 'Fehler: Keine Anmeldeinformationen gefunden.';
+            if (cred) {
+                // If credentials are found, start the streaming process
+                startStreamingWithCredentials(cred.id, cred.password);
+            } else {
+                // Handle cases where no credentials are found
+                document.getElementById('status').textContent = 'Fehler: Keine Anmeldeinformationen gefunden.';
+                document.getElementById('startButton').disabled = false;
+            }
+        } catch (e) {
+            console.error('Error getting credentials:', e);
+            // If the request is not supported, fall back to the prompt
+            if (e.name === 'NotSupportedError' || e.name === 'DOMException') {
+                console.warn('CredentialContainer request not supported. Falling back to prompt.');
+                promptForCredentials();
+            } else {
+                document.getElementById('status').textContent = 'Fehler bei der Anmeldung.';
+                document.getElementById('startButton').disabled = false;
+            }
         }
-    } catch (e) {
-        console.error('Error getting credentials:', e);
-        document.getElementById('status').textContent = 'Fehler bei der Anmeldung.';
+    } else {
+        // Fallback for insecure contexts or unsupported browsers
+        promptForCredentials();
+    }
+}
+
+// Function to prompt for credentials as a fallback
+function promptForCredentials() {
+    console.warn('Falling back to manual credential entry.');
+    const username = prompt('Benutzername eingeben:', 'technician');
+    if (username) {
+        const password = prompt('Passwort eingeben:');
+        if (password) {
+            startStreamingWithCredentials(username, password);
+        } else {
+            document.getElementById('status').textContent = 'Fehler: Passwort erforderlich.';
+            document.getElementById('startButton').disabled = false;
+        }
+    } else {
+        document.getElementById('status').textContent = 'Fehler: Benutzername erforderlich.';
+        document.getElementById('startButton').disabled = false;
     }
 }
 
@@ -29,8 +60,8 @@ function startStreamingWithCredentials(username, password) {
     // Construct the WebSocket URL
     const wsUrl = `ws://${window.location.host}/ws/technician`;
 
-    // Create the subprotocol value for Basic Authentication
-    const subprotocol = `Basic, ${btoa(`${username}:${password}`)}`;
+    // New subprotocol format: "basic-auth-BASE64"
+    const subprotocol = `basic-auth-${btoa(`${username}:${password}`)}`;
 
     // Pass the subprotocol in the WebSocket constructor
     webSocket = new WebSocket(wsUrl, [subprotocol]);
