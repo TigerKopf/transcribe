@@ -5,41 +5,43 @@ let audioWorkletNode;
 let mediaStreamSource;
 
 // Funktion für die Techniker-Seite
-async function startStreaming(token) {
-    if (!token) {
-        document.getElementById('status').textContent = 'Fehler: Authentifizierungs-Token fehlt.';
-        return;
-    }
-    const wsUrl = `ws://${window.location.host}/ws/technician?token=${token}`;
-    webSocket = new WebSocket(wsUrl);
-
+function setupWebSocketHandlers() {
     webSocket.onopen = async () => {
         console.log("WebSocket connection established.");
         document.getElementById('status').textContent = 'Status: Verbunden. Starte Audio...';
 
         try {
-            // 1. Initialisiere AudioContext und lade das Worklet-Modul
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            await audioContext.audioWorklet.addModule('/static/audio-processor.js');
-
-            // 2. Erstelle den AudioWorkletNode
-            audioWorkletNode = new AudioWorkletNode(audioContext, 'audio-data-processor');
-
-            // 3. Richte die Kommunikation vom Worklet zum Haupt-Thread ein
-            audioWorkletNode.port.onmessage = (event) => {
-                if (webSocket.readyState === WebSocket.OPEN) {
-                    // Die Daten sind bereits ein ArrayBuffer, also direkt senden
-                    webSocket.send(event.data);
-                }
-            };
-
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaStreamSource = audioContext.createMediaStreamSource(stream);
 
-            // 4. Verbinde die Audio-Quelle mit dem Worklet
-            mediaStreamSource.connect(audioWorkletNode);
-            // Das Worklet muss mit dem Destination verbunden sein, um die process-Methode auszulösen
-            audioWorkletNode.connect(audioContext.destination);
+            // --- Fallback-Mechanismus ---
+            if (audioContext.audioWorklet) {
+                // Moderne Methode: AudioWorklet
+                await audioContext.audioWorklet.addModule('/static/audio-processor.js');
+                audioWorkletNode = new AudioWorkletNode(audioContext, 'audio-data-processor');
+                audioWorkletNode.port.onmessage = (event) => {
+                    if (webSocket.readyState === WebSocket.OPEN) {
+                        webSocket.send(event.data);
+                    }
+                };
+                mediaStreamSource.connect(audioWorkletNode);
+                audioWorkletNode.connect(audioContext.destination);
+            } else {
+                // Veraltete Methode: ScriptProcessorNode
+                const scriptNode = audioContext.createScriptProcessor(4096, 1, 1);
+                scriptNode.onaudioprocess = (audioProcessingEvent) => {
+                    const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
+                    if (webSocket.readyState === WebSocket.OPEN) {
+                        // Senden der rohen Float32Array-Daten
+                        webSocket.send(inputData.buffer);
+                    }
+                };
+                mediaStreamSource.connect(scriptNode);
+                scriptNode.connect(audioContext.destination);
+                // Weise scriptNode einer globalen Variable zu, um es im onclose-Handler zu trennen
+                audioWorkletNode = scriptNode;
+            }
 
             document.getElementById('status').textContent = 'Status: Übertragung läuft...';
 
