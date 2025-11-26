@@ -74,11 +74,10 @@ async def ws_technician(websocket: WebSocket):
     # Starlette/FastAPI puts the `Sec-WebSocket-Protocol` header here
     subprotocol = websocket.scope.get("subprotocols")
     credentials = None
-    if subprotocol:
-        # Example format: "Basic, bWVpbnM6bWVpbnM=" -> "bWVpbnM6bWVpbnM="
-        auth_part = subprotocol[0].split(',')[-1].strip()
+    if subprotocol and subprotocol[0].startswith("basic-auth-"):
+        # New format: "basic-auth-bWVpbnM6bWVpbnM="
+        auth_part = subprotocol[0][len("basic-auth-"):]
         try:
-            # The credentials should be the second part of the subprotocol header
             credentials = HTTPBasicCredentials(authorization=f"Basic {auth_part}")
         except Exception:
             pass  # Invalid format
@@ -86,8 +85,6 @@ async def ws_technician(websocket: WebSocket):
     # 2. Verify credentials
     try:
         if not credentials or not verify_password(credentials):
-            # This is a bit of a hack. `verify_password` raises HTTPException,
-            # but we can't propagate that in a WebSocket. We catch it and close.
             await websocket.close(code=1008) # Policy Violation
             return
     except HTTPException:
