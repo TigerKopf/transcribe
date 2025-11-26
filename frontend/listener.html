@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zuhörer-Seite</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; }
+        .controls button { margin: 10px; padding: 15px; font-size: 16px; }
+        #status { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Live-Übersetzung</h1>
+    <p>Wählen Sie Ihre Sprache:</p>
+    <div class="controls">
+        <button id="btn-de">Deutsch (Original)</button>
+        <button id="btn-en">Englisch</button>
+        <button id="btn-ru">Russisch</button>
+    </div>
+    <div id="status">Status: Nicht verbunden</div>
+    <div id="stop-container" style="display:none;">
+      <button id="stopButton">Stop Listening</button>
+    </div>
+
+    <script src="/static/main.js"></script>
+    <script>
+        let currentConnection = null;
+
+        function selectLanguage(lang) {
+            if (currentConnection) {
+                currentConnection.close();
+            }
+            currentConnection = listen(lang);
+            document.getElementById('status').textContent = `Status: Verbunden mit ${lang.toUpperCase()}`;
+            document.querySelectorAll('.controls button').forEach(b => b.disabled = true);
+            document.getElementById('stop-container').style.display = 'block';
+        }
+
+        document.getElementById('btn-de').onclick = () => selectLanguage('de');
+        document.getElementById('btn-en').onclick = () => selectLanguage('en');
+        document.getElementById('btn-ru').onclick = () => selectLanguage('ru');
+
+        document.getElementById('stopButton').onclick = () => {
+          if (currentConnection) {
+            currentConnection.close();
+            currentConnection = null;
+          }
+          document.getElementById('status').textContent = 'Status: Nicht verbunden';
+          document.querySelectorAll('.controls button').forEach(b => b.disabled = false);
+          document.getElementById('stop-container').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
