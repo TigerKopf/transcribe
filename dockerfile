@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     libsndfile1 \
     supervisor \
+    nginx \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -23,6 +24,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ ./backend
 COPY frontend/ ./frontend
 COPY supervisor.conf /etc/supervisor/conf.d/supervisor.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 8001
 
