@@ -21,36 +21,25 @@ async function connectWebSocket() {
             }
         } catch (e) {
             console.error('Error getting credentials:', e);
-            // If the request is not supported, fall back to the prompt
-            if (e.name === 'NotSupportedError' || e.name === 'DOMException') {
-                console.warn('CredentialContainer request not supported. Falling back to prompt.');
-                promptForCredentials();
-            } else {
-                document.getElementById('status').textContent = 'Fehler bei der Anmeldung.';
-                document.getElementById('startButton').disabled = false;
-            }
-        }
-    } else {
-        // Fallback for insecure contexts or unsupported browsers
-        promptForCredentials();
-    }
-}
-
-// Function to prompt for credentials as a fallback
-function promptForCredentials() {
-    console.warn('Falling back to manual credential entry.');
-    const username = prompt('Benutzername eingeben:', 'technician');
-    if (username) {
-        const password = prompt('Passwort eingeben:');
-        if (password) {
-            startStreamingWithCredentials(username, password);
-        } else {
-            document.getElementById('status').textContent = 'Fehler: Passwort erforderlich.';
+            document.getElementById('status').textContent = 'Fehler bei der Anmeldung.';
             document.getElementById('startButton').disabled = false;
         }
     } else {
-        document.getElementById('status').textContent = 'Fehler: Benutzername erforderlich.';
-        document.getElementById('startButton').disabled = false;
+        // Fallback for insecure contexts (HTTP) or unsupported browsers
+        console.warn('Credential Management API not available. Falling back to prompt.');
+        const username = prompt('Benutzername eingeben:', 'technician');
+        if (username) {
+            const password = prompt('Passwort eingeben:');
+            if (password) {
+                startStreamingWithCredentials(username, password);
+            } else {
+                document.getElementById('status').textContent = 'Fehler: Passwort erforderlich.';
+                document.getElementById('startButton').disabled = false;
+            }
+        } else {
+            document.getElementById('status').textContent = 'Fehler: Benutzername erforderlich.';
+            document.getElementById('startButton').disabled = false;
+        }
     }
 }
 
