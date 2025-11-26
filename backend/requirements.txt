@@ -2,7 +2,6 @@ fastapi
 uvicorn[standard]
 websockets
 jinja2
-python-dotenv
 # KI-Bibliotheken (diese sind sehr groß!)
 # torch
 # transformers

@@ -3,14 +3,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
-from dotenv import load_dotenv
 import asyncio
 import secrets
 import os
 import uuid
-
-# Lade Umgebungsvariablen aus der .env-Datei
-load_dotenv()
 
 app = FastAPI()
 security = HTTPBasic()
