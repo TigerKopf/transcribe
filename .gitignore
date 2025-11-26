@@ -1,0 +1,20 @@
+# .gitignore
+
+# Ignoriere die .env-Datei, die sensible Daten enthält
+.env
+
+# Ignoriere Python Cache-Dateien
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignoriere virtuelle Umgebungen
+venv/
+env/
+.venv/
+
+# Ignoriere Build-Artefakte
+build/
+dist/
+*.egg-info/

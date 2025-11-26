@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Techniker-Seite</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; }
+        #status { margin-top: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Audio-Übertragung</h1>
+    <p>Diese Seite ist für die Audio-Einspeisung zuständig.</p>
+    <button id="startButton">Übertragung starten</button>
+    <div id="status">Status: Nicht verbunden</div>
+
+    <!-- Pass the token from the server to the JavaScript -->
+    <script>
+        const authToken = "{{ token }}";
+    </script>
+    <script src="/static/main.js"></script>
+    <script>
+        document.getElementById('startButton').onclick = () => {
+            // Pass the token to the streaming function
+            startStreaming(authToken);
+            document.getElementById('status').textContent = 'Status: Verbinde...';
+            document.getElementById('startButton').disabled = true;
+        };
+    </script>
+</body>
+</html>
