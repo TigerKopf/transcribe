@@ -1,0 +1,20 @@
+# Node modules
+node_modules
+
+# Git folder
+.git
+.gitignore
+
+# Docker specific files
+Dockerfile
+.dockerignore
+
+# Build output
+dist
+
+# Test folder
+e2e
+
+# Log files
+npm-debug.log*
+*.log

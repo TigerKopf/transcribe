@@ -1,23 +1,51 @@
-# .gitignore
+# See http://help.github.com/ignore-files/ for more about ignoring files.
 
-# Ignoriere die .env-Datei, die sensible Daten enthält
-.env
+# compiled output
+/dist
+/tmp
+/out-tsc
+# Only exists if Bazel was run
+/bazel-out
 
-# Ignoriere Python Cache-Dateien
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+# dependencies
+/node_modules
 
-# Ignoriere virtuelle Umgebungen
-venv/
-env/
-.venv/
+# profiling files
+chrome-profiler-events*.json
+speed-measure-plugin*.json
 
-# Ignoriere Build-Artefakte
-build/
-dist/
-*.egg-info/
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
 
-# Ignoriere Log-Dateien
-*.log
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/*
+
+# misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+/typings
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Ignore keys and debugging files
+keys
+sdp.txt
+sdp.json
