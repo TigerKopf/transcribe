@@ -7,6 +7,7 @@ import asyncio
 import secrets
 import os
 import uuid
+import base64
 
 app = FastAPI()
 security = HTTPBasic()
@@ -78,7 +79,10 @@ async def ws_technician(websocket: WebSocket):
         # New format: "basic-auth-bWVpbnM6bWVpbnM="
         auth_part = subprotocol[0][len("basic-auth-"):]
         try:
-            credentials = HTTPBasicCredentials(authorization=f"Basic {auth_part}")
+            # Decode the base64 part and split into username and password
+            decoded_auth = base64.b64decode(auth_part).decode("utf-8")
+            username, password = decoded_auth.split(":", 1)
+            credentials = HTTPBasicCredentials(username=username, password=password)
         except Exception:
             pass  # Invalid format
 
