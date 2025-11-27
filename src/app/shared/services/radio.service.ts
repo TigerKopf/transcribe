@@ -179,6 +179,15 @@ export class RadioService {
   leave(stationId: string) {
     console.log('Radio.leave', stationId);
     this.socket.emit('leave', stationId);
+    for (const key in this.listenerServices) {
+      if (this.listenerServices.hasOwnProperty(key)) {
+        const listener = this.listenerServices[key];
+        if (listener) {
+          listener.disconnect();
+        }
+      }
+    }
+    this.listenerServices = {};
   }
 
   start(stationId: string) {
