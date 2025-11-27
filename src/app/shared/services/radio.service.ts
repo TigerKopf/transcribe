@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import io from 'socket.io-client';
 
 import { StationModel } from '../models/models';
+import { ListenerService } from './listener.service';
 
 @Injectable({
   providedIn: 'root'
@@ -154,6 +155,7 @@ export class RadioService {
 
   newListener(id: string, radio: any, audioContext: AudioContext, incomingMedia: GainNode): any {
     console.log('newListener', id, radio, audioContext, incomingMedia);
+    return new ListenerService(id, radio, audioContext, incomingMedia);
   }
 
   add(stationId: string, stationName: string) {

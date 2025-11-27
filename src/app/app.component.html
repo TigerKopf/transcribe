@@ -1,2 +1,2 @@
-<app-nav *ngIf="!urlCurrent.startsWith('/stations/')"></app-nav>
+<app-nav *ngIf="!urlCurrent.startsWith('/stations/') && urlCurrent !== '/listeners-page'"></app-nav>
 <router-outlet></router-outlet>

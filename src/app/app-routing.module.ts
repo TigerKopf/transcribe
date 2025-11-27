@@ -5,6 +5,7 @@ import { ListenerComponent } from './listener/listener.component';
 import { ListenersComponent } from './listeners/listeners.component';
 import { StationComponent } from './station/station.component';
 import { StationsComponent } from './stations/stations.component';
+import { ListenersPageComponent } from './listeners-page/listeners-page.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'stations', pathMatch: 'full' },
@@ -12,6 +13,7 @@ const routes: Routes = [
   { path: 'stations/:id', component: StationComponent },
   { path: 'listeners', component: ListenersComponent },
   { path: 'listeners/:id', component: ListenerComponent },
+  { path: 'listeners-page', component: ListenersPageComponent },
 ];
 
 @NgModule({

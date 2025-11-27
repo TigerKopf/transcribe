@@ -13,6 +13,7 @@ import { NavComponent } from './nav/nav.component';
 import { ListenersComponent } from './listeners/listeners.component';
 import { ListenerComponent } from './listener/listener.component';
 import { VisualizerComponent } from './visualizer/visualizer.component';
+import { ListenersPageComponent } from './listeners-page/listeners-page.component';
 
 @NgModule({
   declarations: [
@@ -22,7 +23,8 @@ import { VisualizerComponent } from './visualizer/visualizer.component';
     NavComponent,
     ListenersComponent,
     ListenerComponent,
-    VisualizerComponent
+    VisualizerComponent,
+    ListenersPageComponent
   ],
   imports: [
     BrowserModule,
