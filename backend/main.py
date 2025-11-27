@@ -16,25 +16,34 @@ templates = Jinja2Templates(directory="frontend")
 # 1. Use environment variable for the password with a default fallback
 CORRECT_PASSWORD = os.environ.get("TECHNICIAN_PASSWORD", "your-secure-password")
 
+def check_credentials(credentials: HTTPBasicCredentials | None):
+    """
+    Checks the provided credentials against the correct password.
+    Raises HTTPException if credentials are bad.
+    """
+    if not credentials:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    current_password_bytes = credentials.password.encode("utf8")
+    is_correct_password = secrets.compare_digest(
+        current_password_bytes, CORRECT_PASSWORD.encode("utf8")
+    )
+    if not is_correct_password:
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+
 def verify_password(credentials: HTTPBasicCredentials = Depends(security)):
     """
-    Verifies the password provided via HTTP Basic Auth.
-    This function now handles both direct credential objects and extracting
-    credentials from the request headers.
+    FastAPI dependency to verify the password provided via HTTP Basic Auth.
     """
-    if credentials:
-        current_password_bytes = credentials.password.encode("utf8")
-        is_correct_password = secrets.compare_digest(
-            current_password_bytes, CORRECT_PASSWORD.encode("utf8")
-        )
-        if not is_correct_password:
-            raise HTTPException(
-                status_code=401,
-                detail="Incorrect password",
-                headers={"WWW-Authenticate": "Basic"},
-            )
-        return True
-    return False
+    check_credentials(credentials)
+    return True
 
 # Manager for connected listeners (remains the same)
 class ConnectionManager:
@@ -88,9 +97,7 @@ async def ws_technician(websocket: WebSocket):
 
     # 2. Verify credentials
     try:
-        if not credentials or not verify_password(credentials):
-            await websocket.close(code=1008) # Policy Violation
-            return
+        check_credentials(credentials)
     except HTTPException:
         await websocket.close(code=1008) # Policy Violation
         return
@@ -124,20 +131,11 @@ async def get_listener(request: Request):
     return templates.TemplateResponse("listener.html", {"request": request})
 
 # 2. Modified technician page route
-@app.get("/technician", response_class=HTMLResponse)
+@app.get("/technician", response_class=HTMLResponse, dependencies=[Depends(verify_password)])
 async def get_technician_page(request: Request):
     """
     Serves the technician page after successful basic auth.
-    No token is needed anymore as auth will be handled via subprotocol in WebSocket.
     """
-    auth = HTTPBasic()
-    credentials = await auth(request)
-    if not verify_password(credentials):
-        raise HTTPException(
-            status_code=401,
-            detail="Incorrect password",
-            headers={"WWW-Authenticate": "Basic"},
-        )
     return templates.TemplateResponse("technician.html", {"request": request})
 
 # Mount static files (remains the same)
