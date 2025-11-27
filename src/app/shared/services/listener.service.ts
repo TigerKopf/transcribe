@@ -25,7 +25,14 @@ export class ListenerService {
     this.radio = radio;
     this.audioContext = audioContext;
     this.incomingMedia = incomingMedia;
-    this.conn = new RTCPeerConnection();
+    const configuration = {
+      iceServers: [
+        {
+          urls: 'stun:stun.l.google.com:19302'
+        }
+      ]
+    };
+    this.conn = new RTCPeerConnection(configuration);
     this.conn.addEventListener('icecandidate', (event: any) => {
       this.handleIceCandidates(event);
     });
