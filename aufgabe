@@ -1,0 +1,8 @@
+Ich würde gerne die Routen und Funktionen etwas umsortieren. Bitte ändere alles auf zwei Hauptrouten um. auf der / 
+sollen alle Zuhörer alle Streams sehen. Hier sollen auch nur die aktiven Streams angezeigt werden, keine
+Zuhörer oder die Möglichkeit Streams zu erstellen. Auch am Profil darf man nichts machen.
+
+Auf der zweiten seite also /ton soll die Technik der Veranstaltung die möglichkeit haben. Streams zu erstellen und
+audio einzuspeisen. Hier können alle aktiven Streams verwaltet werden.
+
+Beachte dabei, dass alles über die Dockerfile läuft, schlage also auch nur solche befehle vor.
