@@ -3,7 +3,7 @@ FROM node:18-alpine AS build
 WORKDIR /app
 
 # Copy package configuration and install all dependencies
-COPY package.json package-lock.json ./
+COPY package*.json ./
 RUN npm install
 
 # Copy the rest of the application source code
@@ -18,7 +18,7 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Copy package configuration and install only production dependencies
-COPY package.json package-lock.json ./
+COPY package*.json ./
 RUN npm install --omit=dev
 
 # Copy the built application from the build stage
