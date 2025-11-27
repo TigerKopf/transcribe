@@ -1,6 +1,6 @@
 # Stage 1: Build the Angular application
-FROM node:18-alpine AS build
 WORKDIR /app
+ENV NODE_OPTIONS=--openssl-legacy-provider
 
 # Copy package configuration and install all dependencies
 COPY package*.json ./
@@ -15,6 +15,7 @@ RUN npm run build -- --configuration production
 
 # Stage 2: Setup the production environment and run the server
 FROM node:18-alpine
+ENV NODE_OPTIONS=--openssl-legacy-provider
 WORKDIR /app
 
 # Copy package configuration and install only production dependencies
