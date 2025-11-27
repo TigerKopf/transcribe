@@ -1,40 +1,28 @@
 # Stage 1: Build the Angular application
+FROM node:10.16.0 as build
+
 WORKDIR /app
-ENV NODE_OPTIONS=--openssl-legacy-provider
 
-# Copy package configuration and install all dependencies
-COPY package*.json ./
-RUN npm install --legacy-peer-deps
+COPY package.json .
+RUN npm install
 
-# Copy the rest of the application source code
 COPY . .
+RUN npm run build
 
-# Generate the production build of the application
-RUN npm run build -- --configuration production
+# Stage 2: Production environment
+FROM node:10.16.0
 
-
-# Stage 2: Setup the production environment and run the server
-FROM node:18-alpine
-ENV NODE_OPTIONS=--openssl-legacy-provider
 WORKDIR /app
 
-# Copy package configuration and install only production dependencies
-COPY package*.json ./
-RUN npm install --legacy-peer-deps --omit=dev
+COPY package.json .
+RUN npm install --production
 
-# Copy the built application from the build stage
 COPY --from=build /app/dist ./dist
-
-# Copy the server script
 COPY server.js .
+COPY parser.js .
 
-# The server requires SSL certificates, let's generate them
-# Note: These are self-signed certificates for development/testing.
-# For a real production environment, you should use certificates from a trusted CA.
-RUN npm run generate
+RUN mkdir ./keys && openssl genrsa -out ./keys/client-key.pem 2048 && openssl req -new -key ./keys/client-key.pem -out ./keys/client.csr -subj "/C=US/ST=CA/L=San Francisco/O=SF/OU=IT/CN=localhost" && openssl x509 -req -in ./keys/client.csr -signkey ./keys/client-key.pem -out ./keys/client-cert.pem
 
-# Expose the port the server will run on
 EXPOSE 8080
 
-# Start the server
 CMD ["node", "server.js"]
